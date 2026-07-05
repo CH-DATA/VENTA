@@ -363,15 +363,39 @@
     font-size:13.5px;
     white-space:nowrap;
   }
-  .ch-feed-del{
+  .ch-feed-edit{
     border:none;
-    background:transparent;
-    color:#c6cbc9;
+    background:#eaf2ff;
+    color:var(--azul);
     font-size:15px;
     cursor:pointer;
-    padding:2px 4px;
+    width:30px;
+    height:30px;
+    min-width:30px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:background .15s ease, transform .15s ease;
   }
-  .ch-feed-del:hover{color:var(--rojo);}
+  .ch-feed-edit:hover{background:var(--azul); color:#fff; transform:scale(1.08);}
+  .ch-feed-del{
+    border:none;
+    background:#fdeceb;
+    color:var(--rojo);
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    width:30px;
+    height:30px;
+    min-width:30px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:background .15s ease, transform .15s ease;
+  }
+  .ch-feed-del:hover{background:var(--rojo); color:#fff; transform:scale(1.08);}
   .ch-empty{
     color:#8a9a94;
     font-size:13px;
@@ -746,7 +770,7 @@
     {id:'audifonos_bass', nombre:'Audífonos Romax Extra Bass', precio:22, icono:'🎧'},
     {id:'powerbank_20000', nombre:'Cargador Portátil 20000mAh 25W', precio:50, icono:'🔋'},
   ];
-  const VENDEDORAS = ['MERGILDA','ROCIO','ISABEL C','OLINDA','EMIKO'];
+  const VENDEDORAS = ['MERGILDA','ROCIO','ISABEL C','OLINDA','EMIKO','SARITA','MAYLI'];
   const STORAGE_KEY = 'ch_ventas_registro';
 
   let ventas = [];
@@ -876,6 +900,7 @@
               <div class="ch-feed-sub">${v.vendedora} · ${hora}</div>
             </div>
             <div class="ch-feed-amount">${fmt(v.subtotal)}</div>
+            <button class="ch-feed-edit" data-edit="${v.id}" title="Editar">✎</button>
             <button class="ch-feed-del" data-del="${v.id}" title="Eliminar">✕</button>
           </div>`;
       });
@@ -929,11 +954,37 @@
         setTimeout(renderVender, 500);
       });
     });
+    elVender.querySelectorAll('[data-edit]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.edit;
+        const venta = ventas.find(v=>v.id === id);
+        if(!venta) return;
+        const nuevaCantidadStr = prompt(`Editar cantidad de "${venta.producto}" (actual: ${venta.cantidad})`, venta.cantidad);
+        if(nuevaCantidadStr === null) return;
+        const nuevaCantidad = parseInt(nuevaCantidadStr, 10);
+        if(!nuevaCantidad || nuevaCantidad < 1){
+          showToast('Cantidad inválida.', '⚠️');
+          return;
+        }
+        venta.cantidad = nuevaCantidad;
+        venta.subtotal = venta.precio * nuevaCantidad;
+        await guardarVentas();
+        showToast('Venta editada.', '✏️');
+        renderVender();
+      });
+    });
     elVender.querySelectorAll('[data-del]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
+        const clave = prompt('Ingresa la clave de administrador para eliminar esta venta:');
+        if(clave === null) return;
+        if(clave.trim().toUpperCase() !== CLAVE_PANEL){
+          showToast('Clave incorrecta. No se eliminó la venta.', '⚠️');
+          return;
+        }
         const id = btn.dataset.del;
         ventas = ventas.filter(v=>v.id !== id);
         await guardarVentas();
+        showToast('Venta eliminada.', '🗑️');
         renderVender();
       });
     });
